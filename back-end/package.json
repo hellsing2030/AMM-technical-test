@@ -1,12 +1,15 @@
 {
-  "name": "back-end",
+  "name": "amm-approval-api",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Serverless purchase approval API for AWS SAM",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "sam build --template-file template.yaml",
+    "test": "vitest --configLoader runner run",
+    "typecheck": "tsc --noEmit",
+    "test:watch": "vitest --configLoader runner",
+    "coverage": "vitest --configLoader runner run --coverage"
   },
-  "keywords": [],
+  "keywords": ["aws-sam", "serverless", "dynamodb", "lambda"],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
@@ -20,10 +23,11 @@
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.162",
-    "@types/node": "^26.2.0",
+    "@types/node": "^24.13.3",
     "@vitest/coverage-v8": "^4.1.10",
     "esbuild": "^0.28.2",
     "typescript": "^7.0.2",
     "vitest": "^4.1.10"
-  }
+  },
+  "private": true
 }

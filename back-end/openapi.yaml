@@ -1,0 +1,199 @@
+openapi: 3.0.3
+info:
+  title: AMM Purchase Approval API
+  version: 1.0.0
+  description: API serverless para solicitudes de compra con tres aprobadores, OTP y evidencia PDF.
+servers:
+  - url: https://{apiId}.execute-api.{region}.amazonaws.com/Prod
+    variables:
+      apiId: { default: example }
+      region: { default: us-east-1 }
+paths:
+  /health:
+    get:
+      summary: Verificar disponibilidad
+      responses:
+        "200": { description: Servicio disponible }
+  /users:
+    get:
+      summary: Listar aprobadores de demostración
+      parameters:
+        - { in: query, name: role, schema: { type: string, example: APPROVER } }
+      responses:
+        "200":
+          description: Usuarios
+          content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/User" } } } }
+  /requests:
+    post:
+      summary: Crear solicitud
+      security: [{ RequesterHeader: [] }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/CreateRequest" } } }
+      responses:
+        "201": { description: Creada, content: { application/json: { schema: { $ref: "#/components/schemas/PurchaseRequest" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    get:
+      summary: Listar solicitudes del solicitante
+      security: [{ RequesterHeader: [] }]
+      responses:
+        "200":
+          description: Solicitudes
+          content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/PurchaseRequest" } } } }
+  /requests/{id}:
+    get:
+      summary: Consultar detalle
+      security: [{ RequesterHeader: [] }]
+      parameters: [{ $ref: "#/components/parameters/RequestId" }]
+      responses:
+        "200": { description: Solicitud, content: { application/json: { schema: { $ref: "#/components/schemas/PurchaseRequest" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /requests/{id}/evidence.pdf:
+    get:
+      summary: Descargar evidencia mediante redirección temporal
+      security: [{ RequesterHeader: [] }]
+      parameters: [{ $ref: "#/components/parameters/RequestId" }]
+      responses:
+        "302": { description: Redirección a una URL S3 firmada por 60 segundos, headers: { Location: { schema: { type: string, format: uri } } } }
+        "409": { description: Evidencia todavía no disponible }
+  /approvals/request-otp:
+    post:
+      summary: Solicitar o reenviar OTP
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, required: [token], properties: { token: { type: string } } } } }
+      responses:
+        "200": { description: OTP emitido }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /approvals/validate-otp:
+    post:
+      summary: Validar OTP y obtener sesión temporal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token, otp]
+              properties:
+                token: { type: string }
+                otp: { type: string, pattern: "^[0-9]{6}$" }
+      responses:
+        "200": { description: Acceso validado, content: { application/json: { schema: { $ref: "#/components/schemas/ApprovalAccess" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /approvals/decision:
+    post:
+      summary: Aprobar o rechazar
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [sessionId, decision]
+              properties:
+                sessionId: { type: string }
+                decision: { type: string, enum: [APPROVE, REJECT] }
+      responses:
+        "200": { description: Decisión registrada, content: { application/json: { schema: { $ref: "#/components/schemas/PurchaseRequest" } } } }
+        "409": { description: Estado o versión en conflicto }
+  /mock-mail:
+    get:
+      summary: Consultar correo simulado
+      responses:
+        "200":
+          description: Mensajes recientes
+          content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/MockMail" } } } }
+components:
+  securitySchemes:
+    RequesterHeader:
+      type: apiKey
+      in: header
+      name: X-Requester-Id
+  parameters:
+    RequestId: { in: path, name: id, required: true, schema: { type: string, format: uuid } }
+  responses:
+    BadRequest: { description: Entrada inválida, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+    Unauthorized: { description: No autorizado, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+    NotFound: { description: No encontrado, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+  schemas:
+    Error:
+      type: object
+      required: [message]
+      properties: { message: { type: string } }
+    User:
+      type: object
+      required: [id, identity, name, email, role]
+      properties:
+        id: { type: string }
+        identity: { type: string }
+        name: { type: string }
+        email: { type: string, format: email }
+        role: { type: string }
+    ApproverInput:
+      type: object
+      required: [approverId, approverIdentity, approverName, approverEmail, role]
+      properties:
+        approverId: { type: string }
+        approverIdentity: { type: string }
+        approverName: { type: string }
+        approverEmail: { type: string, format: email }
+        role: { type: string }
+    CreateRequest:
+      type: object
+      required: [requesterId, requesterIdentity, requesterName, requesterEmail, title, description, amount, approvers]
+      properties:
+        requesterId: { type: string }
+        requesterIdentity: { type: string }
+        requesterName: { type: string }
+        requesterEmail: { type: string, format: email }
+        title: { type: string }
+        description: { type: string }
+        amount: { type: number, exclusiveMinimum: 0 }
+        approvers: { type: array, minItems: 3, maxItems: 3, items: { $ref: "#/components/schemas/ApproverInput" } }
+    Approval:
+      allOf:
+        - { $ref: "#/components/schemas/ApproverInput" }
+        - type: object
+          required: [id, requestId, status, createdAt]
+          properties:
+            id: { type: string, format: uuid }
+            requestId: { type: string, format: uuid }
+            status: { type: string, enum: [PENDING, SIGNED, REJECTED, CANCELLED] }
+            createdAt: { type: string, format: date-time }
+            decisionAt: { type: string, format: date-time }
+            cancelledAt: { type: string, format: date-time }
+    PurchaseRequest:
+      allOf:
+        - { $ref: "#/components/schemas/CreateRequest" }
+        - type: object
+          required: [id, status, approvals, createdAt]
+          properties:
+            id: { type: string, format: uuid }
+            status: { type: string, enum: [PENDING, GENERATING_EVIDENCE, COMPLETED, REJECTED] }
+            approvals: { type: array, items: { $ref: "#/components/schemas/Approval" } }
+            createdAt: { type: string, format: date-time }
+            evidenceKey: { type: string }
+            completedAt: { type: string, format: date-time }
+            rejectedAt: { type: string, format: date-time }
+    ApprovalAccess:
+      type: object
+      required: [sessionId, request, approvalId, expiresAt]
+      properties:
+        sessionId: { type: string }
+        request: { $ref: "#/components/schemas/PurchaseRequest" }
+        approvalId: { type: string }
+        expiresAt: { type: string, format: date-time }
+    MockMail:
+      type: object
+      required: [id, to, subject, body, type, sentAt]
+      properties:
+        id: { type: string }
+        to: { type: string, format: email }
+        subject: { type: string }
+        body: { type: string }
+        type: { type: string, enum: [INVITATION, OTP] }
+        sentAt: { type: string, format: date-time }
+        link: { type: string, format: uri }
+        otp: { type: string }
