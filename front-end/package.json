@@ -1,0 +1,43 @@
+{
+  "name": "amm-purchase-approval-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently -k \"npm:dev:shell\" \"npm:dev:requester\" \"npm:dev:approver\"",
+    "dev:shell": "webpack serve --config webpack/shell.config.cjs --mode development",
+    "dev:requester": "webpack serve --config webpack/requester.config.cjs --mode development",
+    "dev:approver": "webpack serve --config webpack/approver.config.cjs --mode development",
+    "build": "npm run build:requester && npm run build:approver && npm run build:shell",
+    "build:shell": "webpack --config webpack/shell.config.cjs --mode production",
+    "build:requester": "webpack --config webpack/requester.config.cjs --mode production",
+    "build:approver": "webpack --config webpack/approver.config.cjs --mode production",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest --configLoader runner run",
+    "test:watch": "vitest --configLoader runner",
+    "coverage": "vitest --configLoader runner run --coverage"
+  },
+  "dependencies": {
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "react-router-dom": "^7.18.2"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "6.6.3",
+    "@testing-library/react": "16.2.0",
+    "@testing-library/user-event": "14.6.1",
+    "@types/react": "18.3.18",
+    "@types/react-dom": "18.3.5",
+    "@vitest/coverage-v8": "^4.1.10",
+    "concurrently": "9.1.2",
+    "css-loader": "7.1.2",
+    "html-webpack-plugin": "5.6.3",
+    "jsdom": "26.0.0",
+    "style-loader": "4.0.0",
+    "ts-loader": "9.5.2",
+    "typescript": "5.7.3",
+    "vitest": "^4.1.10",
+    "webpack": "^5.109.2",
+    "webpack-cli": "6.0.1",
+    "webpack-dev-server": "^6.0.0"
+  }
+}
