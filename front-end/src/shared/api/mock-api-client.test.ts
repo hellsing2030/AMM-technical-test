@@ -55,7 +55,9 @@ describe("MockApiClient", () => {
     const completed = await client.getRequest(request.id);
     expect(completed.approvals.every((approval) => approval.status === "SIGNED")).toBe(true);
     expect(completed.evidenceKey).toContain(request.id);
-    expect((await client.downloadEvidence(request.id)).type).toBe("application/pdf");
+    const evidence = await client.downloadEvidence(request.id);
+    expect(evidence.kind).toBe("blob");
+    if (evidence.kind === "blob") expect(evidence.blob.type).toBe("application/pdf");
   });
 
   it("rejects a request and cancels the other pending approvals", async () => {

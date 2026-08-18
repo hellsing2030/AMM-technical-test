@@ -24,13 +24,16 @@ export function RequestDetailPage() {
     setDownloading(true);
     setError("");
     try {
-      const blob = await apiClient.downloadEvidence(request.id);
-      const url = URL.createObjectURL(blob);
+      const download = await apiClient.downloadEvidence(request.id);
+      const url = download.kind === "blob" ? URL.createObjectURL(download.blob) : download.url;
       const anchor = document.createElement("a");
       anchor.href = url;
-      anchor.download = `evidencia-${request.id}.pdf`;
+      anchor.download = download.fileName;
+      anchor.rel = "noopener";
+      document.body.appendChild(anchor);
       anchor.click();
-      URL.revokeObjectURL(url);
+      anchor.remove();
+      if (download.kind === "blob") URL.revokeObjectURL(url);
     } catch (reason) {
       setError(getErrorMessage(reason));
     } finally {

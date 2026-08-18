@@ -63,4 +63,21 @@ describe("HTTP handler", () => {
     const mail = await handler(event("GET", "/mock-mail"));
     expect(JSON.parse(mail.body)).toHaveLength(3);
   });
+
+  it("returns the signed evidence URL as JSON instead of redirecting the browser", async () => {
+    const getEvidenceUrl = vi
+      .spyOn(PurchaseApprovalService.prototype, "getEvidenceUrl")
+      .mockResolvedValueOnce("https://evidence.example/signed");
+    const handler = setup();
+
+    const result = await handler(event("GET", "/requests/request-1/evidence.pdf", undefined, "requester-1"));
+
+    expect(result.statusCode).toBe(200);
+    expect(JSON.parse(result.body)).toEqual({
+      url: "https://evidence.example/signed",
+      expiresInSeconds: 60,
+    });
+    expect(getEvidenceUrl).toHaveBeenCalledWith("request-1", "requester-1");
+    getEvidenceUrl.mockRestore();
+  });
 });

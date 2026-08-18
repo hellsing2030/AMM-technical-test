@@ -4,6 +4,7 @@ import type {
   ApprovalAccess,
   CreatePurchaseRequestInput,
   Decision,
+  EvidenceDownload,
   MockMail,
   PurchaseRequestView,
   User,
@@ -11,6 +12,10 @@ import type {
 
 interface ErrorPayload {
   message?: string;
+}
+
+interface EvidenceUrlPayload {
+  url?: string;
 }
 
 export class HttpApiClient implements ApiClient {
@@ -63,17 +68,13 @@ export class HttpApiClient implements ApiClient {
     return this.request<MockMail[]>("/mock-mail");
   }
 
-  async downloadEvidence(requestId: string): Promise<Blob> {
-    const response = await fetch(
-      `${this.baseUrl}/requests/${encodeURIComponent(requestId)}/evidence.pdf`,
-      { headers: { Accept: "application/pdf", "X-Requester-Id": this.requesterId } },
+  async downloadEvidence(requestId: string): Promise<EvidenceDownload> {
+    const payload = await this.request<EvidenceUrlPayload>(
+      `/requests/${encodeURIComponent(requestId)}/evidence.pdf`,
     );
-
-    if (!response.ok) {
-      throw new ApiError("No fue posible descargar la evidencia", response.status);
-    }
-
-    return response.blob();
+    if (!payload.url) throw new ApiError("La API no entregó el enlace de descarga", 502);
+    const safeRequestId = requestId.replace(/[^a-zA-Z0-9._-]/g, "-");
+    return { kind: "url", url: payload.url, fileName: `evidencia-${safeRequestId}.pdf` };
   }
 
   private async request<T>(path: string, init?: RequestInit): Promise<T> {

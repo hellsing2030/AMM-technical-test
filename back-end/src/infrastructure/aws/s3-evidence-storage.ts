@@ -13,6 +13,12 @@ export class S3EvidenceStorage implements EvidenceStorage {
   }
 
   getDownloadUrl(key: string): Promise<string> {
-    return getSignedUrl(this.client, new GetObjectCommand({ Bucket: this.bucketName, Key: key }), { expiresIn: 60 });
+    const fileName = key.split("/").at(-1) || "evidencia.pdf";
+    return getSignedUrl(this.client, new GetObjectCommand({
+      Bucket: this.bucketName,
+      Key: key,
+      ResponseContentDisposition: `attachment; filename="${fileName}"`,
+      ResponseContentType: "application/pdf",
+    }), { expiresIn: 60 });
   }
 }

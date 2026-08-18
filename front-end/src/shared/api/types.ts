@@ -82,6 +82,10 @@ export interface MockMail {
   otp?: string;
 }
 
+export type EvidenceDownload =
+  | { kind: "url"; url: string; fileName: string }
+  | { kind: "blob"; blob: Blob; fileName: string };
+
 export interface ApiClient {
   listApprovers(): Promise<User[]>;
   createRequest(input: CreatePurchaseRequestInput): Promise<PurchaseRequestView>;
@@ -91,5 +95,5 @@ export interface ApiClient {
   validateOtp(token: string, otp: string): Promise<ApprovalAccess>;
   submitDecision(sessionId: string, decision: Decision): Promise<PurchaseRequestView>;
   listMockMail(): Promise<MockMail[]>;
-  downloadEvidence(requestId: string): Promise<Blob>;
+  downloadEvidence(requestId: string): Promise<EvidenceDownload>;
 }

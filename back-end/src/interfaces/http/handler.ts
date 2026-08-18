@@ -46,8 +46,8 @@ export function createHttpHandler(service: PurchaseApprovalService): HttpHandler
       }
       const evidenceMatch = path.match(/^\/requests\/([^/]+)\/evidence\.pdf$/);
       if (method === "GET" && evidenceMatch?.[1]) {
-        const location = await service.getEvidenceUrl(decodeURIComponent(evidenceMatch[1]), requireRequester(event));
-        return { statusCode: 302, headers: { ...corsHeaders(), Location: location }, body: "" };
+        const url = await service.getEvidenceUrl(decodeURIComponent(evidenceMatch[1]), requireRequester(event));
+        return response(200, { url, expiresInSeconds: 60 });
       }
       const requestMatch = path.match(/^\/requests\/([^/]+)$/);
       if (method === "GET" && requestMatch?.[1]) {

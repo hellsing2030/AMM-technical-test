@@ -51,11 +51,20 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
   /requests/{id}/evidence.pdf:
     get:
-      summary: Descargar evidencia mediante redirección temporal
+      summary: Obtener enlace temporal para descargar la evidencia
       security: [{ RequesterHeader: [] }]
       parameters: [{ $ref: "#/components/parameters/RequestId" }]
       responses:
-        "302": { description: Redirección a una URL S3 firmada por 60 segundos, headers: { Location: { schema: { type: string, format: uri } } } }
+        "200":
+          description: URL S3 firmada por 60 segundos
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [url, expiresInSeconds]
+                properties:
+                  url: { type: string, format: uri }
+                  expiresInSeconds: { type: integer, example: 60 }
         "409": { description: Evidencia todavía no disponible }
   /approvals/request-otp:
     post:

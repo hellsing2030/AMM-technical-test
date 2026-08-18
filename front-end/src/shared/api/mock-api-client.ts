@@ -5,6 +5,7 @@ import type {
   ApprovalView,
   CreatePurchaseRequestInput,
   Decision,
+  EvidenceDownload,
   MockMail,
   PurchaseRequestView,
   User,
@@ -225,17 +226,21 @@ export class MockApiClient implements ApiClient {
     return structuredClone(this.readState().mails);
   }
 
-  async downloadEvidence(requestId: string): Promise<Blob> {
+  async downloadEvidence(requestId: string): Promise<EvidenceDownload> {
     const request = this.findRequest(this.readState(), requestId);
     if (request.status !== "COMPLETED" || !request.evidenceKey) {
       throw new ApiError("La evidencia aún no está disponible", 409);
     }
 
     const signedBy = request.approvals.map((approval) => approval.approverName).join(", ");
-    return new Blob(
-      [`Evidencia de aprobación\nSolicitud: ${request.title}\nAprobadores: ${signedBy}`],
-      { type: "application/pdf" },
-    );
+    return {
+      kind: "blob",
+      blob: new Blob(
+        [`Evidencia de aprobación\nSolicitud: ${request.title}\nAprobadores: ${signedBy}`],
+        { type: "application/pdf" },
+      ),
+      fileName: `evidencia-${request.id}.pdf`,
+    };
   }
 
   reset(): void {

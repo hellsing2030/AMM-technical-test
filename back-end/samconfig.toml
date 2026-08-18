@@ -1,7 +1,7 @@
 version = 0.1
 
 [default.global.parameters]
-stack_name = "amm-purchase-approval"
+stack_name = "amm-purchase-aproval"
 region = "us-east-1"
 
 [default.build.parameters]
@@ -15,8 +15,10 @@ lint = true
 capabilities = "CAPABILITY_IAM"
 confirm_changeset = true
 resolve_s3 = true
-stack_name = "amm-purchase-approval"
-region = "us-east-1"
+s3_prefix = "amm-purchase-aproval"
+profile = "amm-dev"
+parameter_overrides = "StageName=\"prod\" AllowedOrigin=\"http://localhost:3000\" ApproverAppUrl=\"http://localhost:3000\""
+image_repositories = []
 
 [default.local_start_api.parameters]
 warm_containers = "EAGER"
